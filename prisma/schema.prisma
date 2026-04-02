@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @db.VarChar(50)
+  email     String    @unique @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  isAdmin   Boolean?  @default(false) @map("is_admin")
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  companyUsers CompanyUser[]
+  bookings     Booking[]
+
+  @@map("users")
+}
+
+model Company {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  address   String?   @db.Text
+  phone     String?   @db.VarChar(50)
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  companyUsers CompanyUser[]
+  rooms        Room[]
+
+  @@map("companies")
+}
+
+model CompanyUser {
+  userId    Int      @map("user_id")
+  companyId Int      @map("company_id")
+  isAdmin   Boolean? @default(false) @map("is_admin")
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@id([userId, companyId])
+  @@map("company_users")
+}
+
+model Room {
+  id          Int       @id @default(autoincrement())
+  companyId   Int       @map("company_id")
+  name        String    @db.VarChar(255)
+  capacity    Int
+  description String?   @db.Text
+  equipment   Json?
+  createdAt   DateTime? @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  availability Availability[]
+  bookings     Booking[]
+
+  @@map("rooms")
+}
+
+model Availability {
+  id        Int      @id @default(autoincrement())
+  roomId    Int      @map("room_id")
+  dayOfWeek Int      @map("day_of_week")
+  startTime DateTime @db.Time() @map("start_time")
+  endTime   DateTime @db.Time() @map("end_time")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@map("availability")
+}
+
+model Booking {
+  id        Int       @id @default(autoincrement())
+  roomId    Int       @map("room_id")
+  userId    Int       @map("user_id")
+  startTime DateTime  @map("start_time")
+  endTime   DateTime  @map("end_time")
+  purpose   String?   @db.Text
+  status    String?   @db.VarChar(20)
+  createdAt DateTime? @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("bookings")
+}
