@@ -1,49 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { registerAction } from "../actions/auth";
 
 export default function RegisterPage() {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  // `useActionState` gère l'état (erreurs/succès) et l'état de chargement nativement (isPending)
+  const [state, formAction, isPending] = useActionState(registerAction, { error: "", success: false });
 
-  const handleRegister = async (e: React.SubmitEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Une erreur est survenue lors de l'inscription.");
-      }
-
-      setSuccess("Votre compte a été créé avec succès ! Vous pouvez maintenant vous connecter.");
-      
-      // On le redirige vers le login après 2 secondes...
-      setTimeout(() => {
+  // Effet pour rediriger après un succès
+  useEffect(() => {
+    if (state.success) {
+      const timer = setTimeout(() => {
         router.push("/login");
       }, 2000);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      return () => clearTimeout(timer);
     }
-  };
+  }, [state.success, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-tr from-slate-900 via-slate-800 to-indigo-950 p-4">
@@ -56,28 +31,28 @@ export default function RegisterPage() {
             <p className="text-slate-300 text-sm">Créez votre compte en quelques secondes</p>
           </div>
 
-          {error && (
+          {state.error && (
             <div className="mb-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg text-red-200 text-sm text-center">
-              {error}
+              {state.error}
             </div>
           )}
 
-          {success && (
+          {state.success && (
             <div className="mb-6 p-4 bg-green-500/10 border border-green-500/50 rounded-lg text-green-200 text-sm text-center">
-              {success}
+              Votre compte a été créé avec succès ! Vous allez être redirigé...
             </div>
           )}
 
-          <form onSubmit={handleRegister} className="space-y-5">
+          <form action={formAction} className="space-y-5">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-slate-200" htmlFor="username">
                 Nom d'utilisateur
               </label>
+              {/* L'attribut name="username" est très important pour recupérer les valeurs via FormData */}
               <input
                 id="username"
+                name="username"
                 type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                 placeholder="Votre nom"
                 required
@@ -90,9 +65,8 @@ export default function RegisterPage() {
               </label>
               <input
                 id="email"
+                name="email"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                 placeholder="vous@exemple.com"
                 required
@@ -105,9 +79,8 @@ export default function RegisterPage() {
               </label>
               <input
                 id="password"
+                name="password"
                 type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                 placeholder="••••••••"
                 required
@@ -117,10 +90,10 @@ export default function RegisterPage() {
 
             <button
               type="submit"
-              disabled={loading || !!success}
-              className="w-full py-3 px-4 bg-white hover:bg-slate-100 text-slate-900 rounded-xl font-bold transition-all shadow-lg transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center mt-4"
+              disabled={isPending || state.success}
+              className="w-full py-3 px-4 bg-white hover:bg-slate-100 text-slate-900 rounded-xl font-bold transition-all shadow-lg transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center mt-4 cursor-pointer"
             >
-              {loading ? (
+              {isPending ? (
                 <div className="w-6 h-6 border-2 border-slate-900/30 border-t-slate-900 rounded-full animate-spin"></div>
               ) : (
                 "S'inscrire"
