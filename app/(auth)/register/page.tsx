@@ -3,7 +3,7 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { registerAction } from "../actions/auth";
+import { registerAction } from "@/app/actions/auth";
 
 export default function RegisterPage() {
   const router = useRouter();

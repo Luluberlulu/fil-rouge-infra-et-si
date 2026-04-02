@@ -1,8 +1,8 @@
 "use server";
 
-import { prisma } from "../../lib/prisma";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { encrypt } from "../../lib/jwt";
+import { encrypt } from "@/lib/jwt";
 import { cookies } from "next/headers";
 
 // --- ACTION 1 : INSCRIPTION ---
