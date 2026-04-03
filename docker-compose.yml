@@ -12,5 +12,19 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rmanager_app
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Dans Docker, on remplace "localhost" par le nom du service "db"
+      DATABASE_URL: "postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public"
+
 volumes:
   postgres_data:
