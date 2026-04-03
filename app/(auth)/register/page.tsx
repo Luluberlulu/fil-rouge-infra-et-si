@@ -3,14 +3,15 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { registerAction } from "@/app/actions/auth";
+import { registerAction } from "@/app/(auth)/auth";
 
 export default function RegisterPage() {
   const router = useRouter();
-  // `useActionState` gère l'état (erreurs/succès) et l'état de chargement nativement (isPending)
-  const [state, formAction, isPending] = useActionState(registerAction, { error: "", success: false });
+  const [state, formAction, isPending] = useActionState(registerAction, {
+    error: "",
+    success: false,
+  });
 
-  // Effet pour rediriger après un succès
   useEffect(() => {
     if (state.success) {
       const timer = setTimeout(() => {
@@ -23,12 +24,16 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-tr from-slate-900 via-slate-800 to-indigo-950 p-4">
       <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
-      
+
       <div className="relative w-full max-w-md">
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Rejoignez-nous</h1>
-            <p className="text-slate-300 text-sm">Créez votre compte en quelques secondes</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
+              Rejoignez-nous
+            </h1>
+            <p className="text-slate-300 text-sm">
+              Créez votre compte en quelques secondes
+            </p>
           </div>
 
           {state.error && (
@@ -45,7 +50,10 @@ export default function RegisterPage() {
 
           <form action={formAction} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-200" htmlFor="username">
+              <label
+                className="text-sm font-medium text-slate-200"
+                htmlFor="username"
+              >
                 Nom d'utilisateur
               </label>
               {/* L'attribut name="username" est très important pour recupérer les valeurs via FormData */}
@@ -60,7 +68,10 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-200" htmlFor="email">
+              <label
+                className="text-sm font-medium text-slate-200"
+                htmlFor="email"
+              >
                 Adresse email
               </label>
               <input
@@ -74,7 +85,10 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-slate-200" htmlFor="password">
+              <label
+                className="text-sm font-medium text-slate-200"
+                htmlFor="password"
+              >
                 Mot de passe
               </label>
               <input
@@ -103,7 +117,10 @@ export default function RegisterPage() {
 
           <p className="mt-8 text-center text-sm text-slate-300">
             Déjà un compte ?{" "}
-            <Link href="/login" className="text-white font-semibold hover:text-indigo-300 transition-colors">
+            <Link
+              href="/login"
+              className="text-white font-semibold hover:text-indigo-300 transition-colors"
+            >
               Se connecter
             </Link>
           </p>

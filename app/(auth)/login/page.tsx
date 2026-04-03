@@ -3,14 +3,15 @@
 import { useActionState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { loginAction } from "@/app/actions/auth";
+import { loginAction } from "@/app/(auth)/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  // `useActionState` gère l'état et prévient d'utiliser des useState locaux
-  const [state, formAction, isPending] = useActionState(loginAction, { error: "", success: false });
+  const [state, formAction, isPending] = useActionState(loginAction, {
+    error: "",
+    success: false,
+  });
 
-  // Redirection dès que la connexion a réussi
   useEffect(() => {
     if (state.success) {
       router.push("/dashboard");
@@ -25,8 +26,12 @@ export default function LoginPage() {
       <div className="relative w-full max-w-md">
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 p-8 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
           <div className="mb-8 text-center">
-            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">Bon retour !</h1>
-            <p className="text-slate-300 text-sm">Connectez-vous pour accéder à votre espace</p>
+            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
+              Bon retour !
+            </h1>
+            <p className="text-slate-300 text-sm">
+              Connectez-vous pour accéder à votre espace
+            </p>
           </div>
 
           {state.error && (
@@ -37,7 +42,10 @@ export default function LoginPage() {
 
           <form action={formAction} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-200" htmlFor="email">
+              <label
+                className="text-sm font-medium text-slate-200"
+                htmlFor="email"
+              >
                 Adresse email
               </label>
               {/* Le champ name="email" transmettra les données via FormData à Server Action */}
@@ -53,10 +61,16 @@ export default function LoginPage() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <label className="text-sm font-medium text-slate-200" htmlFor="password">
+                <label
+                  className="text-sm font-medium text-slate-200"
+                  htmlFor="password"
+                >
                   Mot de passe
                 </label>
-                <Link href="#" className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors">
+                <Link
+                  href="#"
+                  className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
                   Oublié ?
                 </Link>
               </div>
@@ -85,7 +99,10 @@ export default function LoginPage() {
 
           <p className="mt-8 text-center text-sm text-slate-300">
             Vous n'avez pas encore de compte ?{" "}
-            <Link href="/register" className="text-white font-semibold hover:text-indigo-300 transition-colors">
+            <Link
+              href="/register"
+              className="text-white font-semibold hover:text-indigo-300 transition-colors"
+            >
               Créer un compte
             </Link>
           </p>
