@@ -21,6 +21,8 @@ const registerSchema = z.object({
     .string()
     .min(8, "Le mot de passe doit contenir au moins 8 caractères.")
     .max(128, "Le mot de passe ne peut pas dépasser 128 caractères."),
+  companyId: z.coerce.number({ invalid_type_error: "Veuillez sélectionner une entreprise." })
+    .int().positive("Veuillez sélectionner une entreprise."),
 });
 
 const loginSchema = z.object({
@@ -62,6 +64,7 @@ export async function registerAction(prevState: any, formData: FormData) {
     username: formData.get("username"),
     email: formData.get("email"),
     password: formData.get("password"),
+    companyId: formData.get("companyId"),
   };
 
   const result = registerSchema.safeParse(rawData);
@@ -69,7 +72,13 @@ export async function registerAction(prevState: any, formData: FormData) {
     return { error: result.error.errors[0]?.message ?? "Données invalides.", success: false };
   }
 
-  const { username, email, password } = result.data;
+  const { username, email, password, companyId } = result.data;
+
+  // Vérifier que l'entreprise existe réellement
+  const company = await prisma.company.findUnique({ where: { id: companyId } });
+  if (!company) {
+    return { error: "Entreprise introuvable.", success: false };
+  }
 
   try {
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -78,7 +87,13 @@ export async function registerAction(prevState: any, formData: FormData) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    await prisma.user.create({ data: { username, email, password: hashedPassword } });
+    // Création de l'utilisateur ET du lien avec l'entreprise (transaction atomique)
+    await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({ data: { username, email, password: hashedPassword } });
+      await tx.companyUser.create({
+        data: { userId: user.id, companyId, isAdmin: false },
+      });
+    });
 
     return { success: true };
   } catch (error) {
@@ -141,4 +156,9 @@ export async function loginAction(prevState: any, formData: FormData) {
     console.error("Login Server Action Error:", error);
     return { error: "Une erreur serveur est survenue.", success: false };
   }
+}
+// --- ACTION 3 : DÉCONNEXION ---
+export async function logoutAction() {
+  const cookieStore = await cookies();
+  cookieStore.delete("session");
 }
