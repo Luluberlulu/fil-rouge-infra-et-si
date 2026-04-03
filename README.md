@@ -1,36 +1,123 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Room Manager
 
-## Getting Started
+Application de gestion de salles de réunion pour entreprises. Permet aux utilisateurs de réserver des salles, et aux admins de gérer les salles et les membres.
 
-First, run the development server:
+## Stack technique
+
+- **Framework** : Next.js 16 (App Router, Server Actions)
+- **Base de données** : PostgreSQL (via Docker)
+- **ORM** : Prisma 7 avec adaptateur `pg`
+- **Auth** : JWT (jose) + cookies httpOnly
+- **UI** : Tailwind CSS 4
+- **Runtime** : Node.js, pnpm
+
+## Prérequis
+
+- [Node.js](https://nodejs.org/) (v20+)
+- [pnpm](https://pnpm.io/) (`npm install -g pnpm`)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+## Démarrage du développement
+
+### 1. Cloner le repo
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone <url-du-repo>
+cd fil-rouge-infra-et-si
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Installer les dépendances
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Configurer les variables d'environnement
 
-## Learn More
+Créer un fichier `.env` à la racine du projet :
 
-To learn more about Next.js, take a look at the following resources:
+```env
+# Base de données (utilisé par docker-compose)
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_NAME=rmanager
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# URL de connexion Prisma (doit correspondre aux variables ci-dessus)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/rmanager
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+# Secret JWT (min. 32 caractères aléatoires)
+AUTH_SECRET=WOcJTDesLYyk4hg6tTSg6lNFf0rlPvc3
+```
 
-## Deploy on Vercel
+> **Important** : `DATABASE_URL` doit correspondre à `DB_USER`, `DB_PASSWORD` et `DB_NAME`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 4. Démarrer la base de données (Docker)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+docker compose up -d
+```
+
+### 5. Lancer les migrations Prisma
+
+```bash
+pnpm dlx prisma migrate dev
+```
+
+### 6. (Optionnel) Peupler la base avec des données de test
+
+```bash
+pnpm seed
+```
+
+### 7. Démarrer l'application
+
+```bash
+pnpm dev
+```
+
+L'application est disponible sur [http://localhost:3000](http://localhost:3000).
+
+## Structure du projet
+
+```
+app/
+  (auth)/          # Pages login et register (non protégées)
+    auth.ts        # Server Actions : login, register, logout
+    login/
+    register/
+  actions/         # Server Actions métier
+    bookings.ts
+    rooms.ts
+    users.ts
+    admin.ts
+  dashboard/       # Pages protégées (nécessite d'être connecté)
+    layout.tsx     # Sidebar + header avec vérification de session
+    page.tsx       # Vue d'ensemble
+    bookings/
+    rooms/
+    users/
+    admin/         # Réservé aux Super Admins (User.isAdmin = true)
+lib/
+  jwt.ts           # Chiffrement / déchiffrement JWT
+  prisma.ts        # Instance Prisma (singleton)
+prisma/
+  schema.prisma    # Modèles de données
+  migrations/
+  seed.ts          # Données initiales
+```
+
+## Rôles utilisateurs
+
+| Rôle | Description |
+|------|-------------|
+| **Utilisateur** | Peut consulter les salles et faire des réservations |
+| **Admin entreprise** | Peut gérer les salles et les membres de son entreprise (`CompanyUser.isAdmin = true`) |
+| **Super Admin** | Accès complet à toutes les entreprises (`User.isAdmin = true`) |
+
+## Déploiement (Docker)
+
+Un `Dockerfile` et un `docker-compose.yml` sont inclus pour le déploiement en production.
+
+```bash
+docker compose up --build
+```
