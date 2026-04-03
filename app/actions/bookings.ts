@@ -54,36 +54,47 @@ export async function createBookingAction(prevState: any, formData: FormData) {
     return { error: "L'heure de fin doit être après l'heure de début.", success: false };
   }
 
-  // Vérification des chevauchements (uniquement sur réservations actives)
-  const overlapping = await prisma.booking.findFirst({
-    where: {
-      roomId,
-      status: { not: "cancelled" },
-      AND: [
-        { startTime: { lt: tEnd } },
-        { endTime: { gt: tStart } }
-      ]
-    }
-  });
-
-  if (overlapping) {
-    return { error: "Cette salle est déjà réservée sur ce créneau horaire.", success: false };
-  }
-
   try {
-    await prisma.booking.create({
-      data: {
-        roomId,
-        userId: session.userId,
-        startTime: tStart,
-        endTime: tEnd,
-        purpose,
-        status: "confirmed"
-      }
-    });
+    await prisma.$transaction(async (tx) => {
+      // Vérifier que la salle appartient à une entreprise dont l'utilisateur est membre
+      const room = await tx.room.findFirst({
+        where: {
+          id: roomId,
+          company: { companyUsers: { some: { userId: session.userId } } },
+        },
+      });
+      if (!room) throw new Error("ROOM_NOT_FOUND");
+
+      // Vérification des chevauchements dans la transaction (évite la race condition)
+      const overlapping = await tx.booking.findFirst({
+        where: {
+          roomId,
+          status: { not: "cancelled" },
+          AND: [{ startTime: { lt: tEnd } }, { endTime: { gt: tStart } }],
+        },
+      });
+      if (overlapping) throw new Error("OVERLAP");
+
+      await tx.booking.create({
+        data: {
+          roomId,
+          userId: session.userId,
+          startTime: tStart,
+          endTime: tEnd,
+          purpose,
+          status: "confirmed",
+        },
+      });
+    }, { isolationLevel: "Serializable" });
 
     return { success: true };
   } catch (error) {
+    if (error instanceof Error) {
+      if (error.message === "OVERLAP")
+        return { error: "Cette salle est déjà réservée sur ce créneau horaire.", success: false };
+      if (error.message === "ROOM_NOT_FOUND")
+        return { error: "Salle introuvable ou accès refusé.", success: false };
+    }
     console.error("Booking Error:", error);
     return { error: "Erreur lors de la réservation en BDD.", success: false };
   }

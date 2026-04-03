@@ -1,5 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { decrypt } from "@/lib/jwt";
 import Link from "next/link";
 import BookingForm from "./BookingForm";
 
@@ -9,15 +12,30 @@ export default async function RoomDetailsPage({ params }: { params: Promise<{ id
 
   if (isNaN(roomId)) notFound();
 
+  // Récupérer la session (le layout garantit qu'on est connecté, mais on relit pour avoir userId)
+  const cookieStore = await cookies();
+  const token = cookieStore.get("session")?.value;
+  const session = token ? await decrypt(token) : null;
+  if (!session) redirect("/login");
+
   const now = new Date();
   // Horizon : on affiche les créneaux des 14 prochains jours
   const horizon = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
 
+  // Vérifier que la salle appartient à une entreprise dont l'utilisateur est membre
+  // (sauf super admin qui a accès à tout)
+  const roomQuery = session.isAdmin
+    ? prisma.room.findUnique({ where: { id: roomId }, include: { company: true } })
+    : prisma.room.findFirst({
+        where: {
+          id: roomId,
+          company: { companyUsers: { some: { userId: session.userId } } },
+        },
+        include: { company: true },
+      });
+
   const [room, upcomingBookings] = await Promise.all([
-    prisma.room.findUnique({
-      where: { id: roomId },
-      include: { company: true },
-    }),
+    roomQuery,
     prisma.booking.findMany({
       where: {
         roomId,

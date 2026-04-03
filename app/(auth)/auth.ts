@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { encrypt } from "@/lib/jwt";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 
 // --- SCHÉMAS DE VALIDATION (Zod) ---
@@ -73,6 +74,11 @@ export async function registerAction(prevState: any, formData: FormData) {
   }
 
   const { username, email, password, companyId } = result.data;
+
+  // Rate limiting par email sur l'inscription
+  if (!checkRateLimit(`register:${email}`)) {
+    return { error: "Trop de tentatives. Réessayez dans 15 minutes.", success: false };
+  }
 
   // Vérifier que l'entreprise existe réellement
   const company = await prisma.company.findUnique({ where: { id: companyId } });
@@ -161,4 +167,5 @@ export async function loginAction(prevState: any, formData: FormData) {
 export async function logoutAction() {
   const cookieStore = await cookies();
   cookieStore.delete("session");
+  redirect("/login");
 }
